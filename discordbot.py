@@ -39,7 +39,7 @@ class thanatos_Cog(commands.Cog):
         await ctx.send('pong')
 
     @commands.command()
-    async def _update_reactions(self, payload):
+    async def _update_reactions(self, payload, pt_mode=False):
         msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
         embed = msg.embeds[0]
         # add/removeが発生したリアクションのリストを更新する
@@ -59,36 +59,37 @@ class thanatos_Cog(commands.Cog):
 
             embed.set_field_at(pt, name=name, value=label, inline=True)
         else:
-            if "エントリー" in embed.title:
-                id = self.marks.index(payload.emoji.name)
-                name = self.marks[id] + self.labels[id]
-            else:
-                id = self.pt_marks.index(payload.emoji.name)
-                name = self.pt_marks[id] + self.pt_labels[id]
-            users = await msg.reactions[id].users().flatten()
-            for u in users:
-                # botでないユーザの名前を改行挟んで文字列連結
-                # 本当は上のリストをうまく絞り込んでjoinするのがpythonっぽいはずだがスキル不足である
-                if not u.bot:
-                    label += u.name + '\n'
-            embed.set_field_at(id, name=name, value=label, inline=True)
-
+            id = self.marks.index(payload.emoji.name)
+            name = self.marks[id] + self.labels[id]
+        users = await msg.reactions[id].users().flatten()
+        for u in users:
+            # botでないユーザの名前を改行挟んで文字列連結
+            # 本当は上のリストをうまく絞り込んでjoinするのがpythonっぽいはずだがスキル不足である
+            if not u.bot:
+                label += u.name + '\n'
+        embed.set_field_at(id, name=name, value=label, inline=True)
         await msg.edit(embed=embed)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         if not payload.member.bot:
+            if payload.emoji.name in self.marks:
                 await self._update_reactions(payload)
+            elif payload.emoji.name in self.pt_marks:
+                await self._update_reactions(payload, pt_mode=True)
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
+        if payload.emoji.name in self.marks:
             await self._update_reactions(payload)
+        elif payload.emoji.name in self.pt_marks:
+            await self._update_reactions(payload, pt_mode=True)
 
     @commands.command()
     async def entry_hero(self, ctx, date=""):
         # 最初の描画
         embed = discord.Embed()
-        embed.title = f"エントリー ： {date} "
+        embed.title = f"タナトスヒーロー エントリー ： {date} "
         for key, mark, label in zip(self.keys, self.marks, self.labels):
             embed.add_field(name=mark+label, value="\u200b", inline=True)
         msg = await ctx.send(embed=embed)
@@ -98,7 +99,7 @@ class thanatos_Cog(commands.Cog):
     @commands.command()
     async def organize_hero(self, ctx, datetime):
         embed = discord.Embed()
-        embed.title = f"パーティ編成： {datetime}"
+        embed.title = f"タナトスヒーロー パーティ編成： {datetime}"
         for key, mark, label in zip(self.pt_keys, self.pt_marks, self.pt_labels):
             embed.add_field(name=mark+label, value="\u200b", inline=True)
         msg = await ctx.send(embed=embed)
