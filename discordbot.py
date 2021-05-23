@@ -28,56 +28,67 @@ class thanatos_Cog(commands.Cog):
         self.pt_labels = ["塩PT", "無塩PT"]
         
         # organize_future用
-        self.PT_future_keys = ["maintank", "subtank", "saint", "dark", "am", "rm", "lb", "dram", "lunasora", "other"]
-        self.PT_future_marks = ['🛡️', '🛡️', '💚', '💜', '✨', '⚔', '🤖', '🐱', '☀', '🔥']
-        self.PT_future_labels = ["メインタンク", "サブタンク", "支援セイント", "闇変セイント", "アーケインマスター", "ルーンマスター", "ライトブリンガー", 
+        self.pt_future_keys = ["maintank", "subtank", "saint", "dark", "am", "rm", "lb", "dram", "lunasora", "other"]
+        self.pt_future_marks = ['🛡️', '🔰', '💚', '💜', '✨', '⚔', '🤖', '🐱','🐿️', '🔥']
+        self.pt_future_labels = ["メインタンク", "サブタンク", "支援セイント", "闇変セイント", "アーケインマスター", "ルーンマスター", "ライトブリンガー",
                                  "ドラム", "ルナソラ", "その他火力"]
+        self.pt_future_ptflgs = [1, 0, 1, 0, 1, 0, 1, 0, 0, 0]
 
     @commands.command()
     async def ping(self, ctx):
         await ctx.send('pong')
 
     @commands.command()
-    async def _update_reactions(self, payload, pt_mode=False):
+    async def _update_reactions(self, payload):
         msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
         embed = msg.embeds[0]
         # add/removeが発生したリアクションのリストを更新する
         label = "\u200b"
-        if pt_mode:
-            id = self.pt_marks.index(payload.emoji.name)
-            name = self.pt_marks[id] + self.pt_labels[id]
+        if "dev" in embed.title:
+            id = self.pt_future_marks.index(payload.emoji.name)
+            pt = self.pt_future_ptflgs[id]  # pt=0: 塩, pt=1 : 無塩
+            name = self.pt_marks[pt] + self.pt_labels[pt]
+            # label作る。各PT所属を全部舐める
+            for i in range(0, len(self.pt_future_keys)):
+                if self.pt_future_ptflgs[i] != pt:
+                    continue
+                users = await msg.reactions[i].users().flatten()
+                for u in users:
+                    if not u.bot:
+                        label += u.name + "(" + self.pt_future_labels[i] + ")\n"
+
+            embed.set_field_at(pt, name=name, value=label, inline=True)
         else:
-            id = self.marks.index(payload.emoji.name)
-            name = self.marks[id] + self.labels[id]
-        users = await msg.reactions[id].users().flatten()
-        for u in users:
-            # botでないユーザの名前を改行挟んで文字列連結
-            # 本当は上のリストをうまく絞り込んでjoinするのがpythonっぽいはずだがスキル不足である
-            if not u.bot:
-                label += u.name + '\n'
-        embed.set_field_at(id, name=name, value=label, inline=True)
+            if "エントリー" in embed.title:
+                id = self.marks.index(payload.emoji.name)
+                name = self.marks[id] + self.labels[id]
+            else:
+                id = self.pt_marks.index(payload.emoji.name)
+                name = self.pt_marks[id] + self.pt_labels[id]
+            users = await msg.reactions[id].users().flatten()
+            for u in users:
+                # botでないユーザの名前を改行挟んで文字列連結
+                # 本当は上のリストをうまく絞り込んでjoinするのがpythonっぽいはずだがスキル不足である
+                if not u.bot:
+                    label += u.name + '\n'
+            embed.set_field_at(id, name=name, value=label, inline=True)
+
         await msg.edit(embed=embed)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         if not payload.member.bot:
-            if payload.emoji.name in self.marks:
                 await self._update_reactions(payload)
-            elif payload.emoji.name in self.pt_marks:
-                await self._update_reactions(payload, pt_mode=True)
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
-        if payload.emoji.name in self.marks:
             await self._update_reactions(payload)
-        elif payload.emoji.name in self.pt_marks:
-            await self._update_reactions(payload, pt_mode=True)
 
     @commands.command()
     async def entry_hero(self, ctx, date=""):
         # 最初の描画
         embed = discord.Embed()
-        embed.title = f"タナトスヒーロー エントリー ： {date} "
+        embed.title = f"エントリー ： {date} "
         for key, mark, label in zip(self.keys, self.marks, self.labels):
             embed.add_field(name=mark+label, value="\u200b", inline=True)
         msg = await ctx.send(embed=embed)
@@ -87,7 +98,7 @@ class thanatos_Cog(commands.Cog):
     @commands.command()
     async def organize_hero(self, ctx, datetime):
         embed = discord.Embed()
-        embed.title = f"タナトスヒーロー パーティ編成： {datetime}"
+        embed.title = f"パーティ編成： {datetime}"
         for key, mark, label in zip(self.pt_keys, self.pt_marks, self.pt_labels):
             embed.add_field(name=mark+label, value="\u200b", inline=True)
         msg = await ctx.send(embed=embed)
@@ -95,10 +106,10 @@ class thanatos_Cog(commands.Cog):
             await msg.add_reaction(mark)
 
     @commands.command()
-    async def organize_future_hero(self, ctx, datetime, pttype):
+    async def organize_future_hero(self, ctx, datetime):
         embed = discord.Embed()
-        embed.title = f"タナトスヒーロー パーティ編成： {datetime} {pttype}"
-        for key, mark, label in zip(self.pt_future_keys, self.pt_future_marks, self.pt_future_labels):
+        embed.title = f"パーティ編成_dev： {datetime}"
+        for key, mark, label in zip(self.pt_keys, self.pt_marks, self.pt_labels):
             embed.add_field(name=mark+label, value="\u200b", inline=True)
         msg = await ctx.send(embed=embed)
         for mark in self.pt_future_marks:
