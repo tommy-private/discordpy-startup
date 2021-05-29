@@ -61,13 +61,13 @@ class thanatos_Cog(commands.Cog):
         else:
             id = self.marks.index(payload.emoji.name)
             name = self.marks[id] + self.labels[id]
-        users = await msg.reactions[id].users().flatten()
-        for u in users:
-            # botでないユーザの名前を改行挟んで文字列連結
-            # 本当は上のリストをうまく絞り込んでjoinするのがpythonっぽいはずだがスキル不足である
-            if not u.bot:
-                label += u.name + '\n'
-        embed.set_field_at(id, name=name, value=label, inline=True)
+            users = await msg.reactions[id].users().flatten()
+            for u in users:
+                # botでないユーザの名前を改行挟んで文字列連結
+                # 本当は上のリストをうまく絞り込んでjoinするのがpythonっぽいはずだがスキル不足である
+                if not u.bot:
+                    label += u.name + '\n'
+            embed.set_field_at(id, name=name, value=label, inline=True)
         await msg.edit(embed=embed)
 
     @commands.Cog.listener()
