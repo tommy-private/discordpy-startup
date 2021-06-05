@@ -45,19 +45,23 @@ class thanatos_Cog(commands.Cog):
         # add/removeが発生したリアクションのリストを更新する
         label = "\u200b"
         if "dev" in embed.title:
-            id = self.pt_future_marks.index(payload.emoji.name)
-            pt = self.pt_future_ptflgs[id]  # pt=0: 塩, pt=1 : 無塩
-            name = self.pt_marks[pt] + self.pt_labels[pt]
-            # label作る。各PT所属を全部舐める
-            for i in range(0, len(self.pt_future_keys)):
-                if self.pt_future_ptflgs[i] != pt:
-                    continue
-                users = await msg.reactions[i].users().flatten()
-                for u in users:
-                    if not u.bot:
-                        label += u.name + "(" + self.pt_future_labels[i] + ")\n"
-
-            embed.set_field_at(pt, name=name, value=label, inline=True)
+            try:
+                id = self.pt_future_marks.index(payload.emoji.name)
+            except:
+                print("指定外のリアクションが押されました")
+                return
+            else:
+                pt = self.pt_future_ptflgs[id]  # pt=0: 塩, pt=1 : 無塩
+                name = self.pt_marks[pt] + self.pt_labels[pt]
+                # label作る。各PT所属を全部舐める
+                for i in range(0, len(self.pt_future_keys)):
+                    if self.pt_future_ptflgs[i] != pt:
+                        continue
+                    users = await msg.reactions[i].users().flatten()
+                    for u in users:
+                        if not u.bot:
+                            label += u.name + "(" + self.pt_future_labels[i] + ")\n"
+                embed.set_field_at(pt, name=name, value=label, inline=True)
         else:
             id = self.marks.index(payload.emoji.name)
             name = self.marks[id] + self.labels[id]
@@ -73,17 +77,11 @@ class thanatos_Cog(commands.Cog):
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
         if not payload.member.bot:
-            if payload.emoji.name in self.marks:
-                await self._update_reactions(payload)
-            elif payload.emoji.name in self.pt_marks:
-                await self._update_reactions(payload, pt_mode=True)
+            await self._update_reactions(payload)
 
     @commands.Cog.listener()
     async def on_raw_reaction_remove(self, payload):
-        if payload.emoji.name in self.marks:
-            await self._update_reactions(payload)
-        elif payload.emoji.name in self.pt_marks:
-            await self._update_reactions(payload, pt_mode=True)
+        await self._update_reactions(payload)
 
     @commands.command()
     async def entry_hero(self, ctx, date=""):
