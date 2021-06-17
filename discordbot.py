@@ -44,7 +44,7 @@ class thanatos_Cog(commands.Cog):
         embed = msg.embeds[0]
         # add/removeが発生したリアクションのリストを更新する
         label = "\u200b"
-        if "dev" in embed.title:
+        if "編成" in embed.title:
             try:
                 id = self.pt_future_marks.index(payload.emoji.name)
             except:
@@ -87,7 +87,7 @@ class thanatos_Cog(commands.Cog):
     async def entry_hero(self, ctx, date=""):
         # 最初の描画
         embed = discord.Embed()
-        embed.title = f"タナトスヒーロー エントリー ： {date} "
+        embed.title = f"エントリー ： {date} "
         for key, mark, label in zip(self.keys, self.marks, self.labels):
             embed.add_field(name=mark+label, value="\u200b", inline=True)
         msg = await ctx.send(embed=embed)
@@ -97,17 +97,7 @@ class thanatos_Cog(commands.Cog):
     @commands.command()
     async def organize_hero(self, ctx, datetime):
         embed = discord.Embed()
-        embed.title = f"タナトスヒーロー パーティ編成： {datetime}"
-        for key, mark, label in zip(self.pt_keys, self.pt_marks, self.pt_labels):
-            embed.add_field(name=mark+label, value="\u200b", inline=True)
-        msg = await ctx.send(embed=embed)
-        for mark in self.pt_marks:
-            await msg.add_reaction(mark)
-
-    @commands.command()
-    async def organize_future_hero(self, ctx, datetime):
-        embed = discord.Embed()
-        embed.title = f"パーティ編成_dev： {datetime}"
+        embed.title = f"パーティ編成： {datetime}"
         for key, mark, label in zip(self.pt_keys, self.pt_marks, self.pt_labels):
             embed.add_field(name=mark+label, value="\u200b", inline=True)
         msg = await ctx.send(embed=embed)
