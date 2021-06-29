@@ -26,7 +26,7 @@ class thanatos_Cog(commands.Cog):
         self.pt_keys = ["salt", "non-salt"]
         self.pt_marks = ['🈶', '🈚']
         self.pt_labels = ["塩PT", "無塩PT"]
-        
+
         # organize_future用
         self.pt_future_keys = ["maintank", "subtank", "saint", "dark", "am", "rm", "lb", "dram", "lunasora", "other"]
         self.pt_future_marks = ['🛡️', '🔰', '💚', '💜', '✨', '⚔', '🤖', '🐱','🐿️', '🔥']
@@ -41,38 +41,39 @@ class thanatos_Cog(commands.Cog):
     @commands.command()
     async def _update_reactions(self, payload, pt_mode=False):
         msg = await self.bot.get_channel(payload.channel_id).fetch_message(payload.message_id)
-        embed = msg.embeds[0]
-        # add/removeが発生したリアクションのリストを更新する
-        label = "\u200b"
-        if "編成" in embed.title:
-            try:
-                id = self.pt_future_marks.index(payload.emoji.name)
-            except:
-                print("指定外のリアクションが押されました")
-                return
+        if msg.embeds:
+            embed = msg.embeds[0]
+            # add/removeが発生したリアクションのリストを更新する
+            label = "\u200b"
+            if "編成" in embed.title:
+                try:
+                    id = self.pt_future_marks.index(payload.emoji.name)
+                except:
+                    print("指定外のリアクションが押されました")
+                    return
+                else:
+                    pt = self.pt_future_ptflgs[id]  # pt=0: 塩, pt=1 : 無塩
+                    name = self.pt_marks[pt] + self.pt_labels[pt]
+                    # label作る。各PT所属を全部舐める
+                    for i in range(0, len(self.pt_future_keys)):
+                        if self.pt_future_ptflgs[i] != pt:
+                            continue
+                        users = await msg.reactions[i].users().flatten()
+                        for u in users:
+                            if not u.bot:
+                                label += u.name + "(" + self.pt_future_labels[i] + ")\n"
+                    embed.set_field_at(pt, name=name, value=label, inline=True)
             else:
-                pt = self.pt_future_ptflgs[id]  # pt=0: 塩, pt=1 : 無塩
-                name = self.pt_marks[pt] + self.pt_labels[pt]
-                # label作る。各PT所属を全部舐める
-                for i in range(0, len(self.pt_future_keys)):
-                    if self.pt_future_ptflgs[i] != pt:
-                        continue
-                    users = await msg.reactions[i].users().flatten()
-                    for u in users:
-                        if not u.bot:
-                            label += u.name + "(" + self.pt_future_labels[i] + ")\n"
-                embed.set_field_at(pt, name=name, value=label, inline=True)
-        else:
-            id = self.marks.index(payload.emoji.name)
-            name = self.marks[id] + self.labels[id]
-            users = await msg.reactions[id].users().flatten()
-            for u in users:
-                # botでないユーザの名前を改行挟んで文字列連結
-                # 本当は上のリストをうまく絞り込んでjoinするのがpythonっぽいはずだがスキル不足である
-                if not u.bot:
-                    label += u.name + '\n'
-            embed.set_field_at(id, name=name, value=label, inline=True)
-        await msg.edit(embed=embed)
+                id = self.marks.index(payload.emoji.name)
+                name = self.marks[id] + self.labels[id]
+                users = await msg.reactions[id].users().flatten()
+                for u in users:
+                    # botでないユーザの名前を改行挟んで文字列連結
+                    # 本当は上のリストをうまく絞り込んでjoinするのがpythonっぽいはずだがスキル不足である
+                    if not u.bot:
+                        label += u.name + '\n'
+                embed.set_field_at(id, name=name, value=label, inline=True)
+            await msg.edit(embed=embed)
 
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload):
